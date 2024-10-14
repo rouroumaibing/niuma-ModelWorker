@@ -1,0 +1,10 @@
+- image_path: C:/click/images/search.jpg
+  input_text: ''
+  loop_count: '1'
+  option: 单击
+  wait_time: '0'
+- image_path: ''
+  input_text: https://github.com/rouroumaibing
+  loop_count: '1'
+  option: 输入
+  wait_time: '0'

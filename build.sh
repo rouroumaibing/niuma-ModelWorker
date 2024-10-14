@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --add-data "./*;." run.py --name niuma
