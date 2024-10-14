@@ -38,23 +38,34 @@ class ScreenshotWidget(QWidget):
 
     def mouseReleaseEvent(self, event):
         self.close()
-        x1, y1 = self.begin.x() * self.screen_scaling, self.begin.y() * self.screen_scaling
-        x2, y2 = self.end.x() * self.screen_scaling, self.end.y() * self.screen_scaling
-        if x1 > x2:
-            x1, x2 = x2, x1
-        if y1 > y2:
-            y1, y2 = y2, y1
-        im = ImageGrab.grab(bbox=(x1, y1, x2, y2))
-        logging.info("截图完成")
+        if self.begin is not None and self.end is not None:
+            x1, y1 = self.begin.x() * self.screen_scaling, self.begin.y() * self.screen_scaling
+            x2, y2 = self.end.x() * self.screen_scaling, self.end.y() * self.screen_scaling
+            
+            if x1 > x2:
+                x1, x2 = x2, x1
+            if y1 > y2:
+                y1, y2 = y2, y1
+            
+            if x1 == x2 or y1 == y2:
+                logging.warning("未选择截图区域")
+                self.screenshot_complete()
+                return
+            
+            im = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+            logging.info("截图完成")
 
-        random_filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)) + ".jpg"
-        if not os.path.exists("images"):
-            os.makedirs("images")
-        im.save(os.path.join("images", random_filename))
-        logging.info(f"截图保存到 {os.path.join('images', random_filename)}")
+            random_filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)) + ".jpg"
+            if not os.path.exists("images"):
+                os.makedirs("images")
+            im.save(os.path.join("images", random_filename))
+            logging.info(f"截图保存到 {os.path.join('images', random_filename)}")
 
-        # 调用截图完成后的回调函数
-        self.screenshot_complete()
+            # 调用截图完成后的回调函数
+            self.screenshot_complete()
+        else:
+            logging.warning("未选择截图区域")
+            self.screenshot_complete()
     
     def screenshot_complete(self):
         self.close()

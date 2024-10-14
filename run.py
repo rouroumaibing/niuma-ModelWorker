@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
         self.add_button.clicked.connect(lambda: self.add_control_row(self.controls_layout))
         self.controls_layout.addWidget(self.add_button)
 
-        # 创建中心 widget
+        # 创建中心widget
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
