@@ -1,1 +1,1 @@
-pyinstaller --onefile --windowed --add-data "./*;." run.py --name niuma
+pyinstaller --onefile --windowed --add-data "./*;." --icon=logo/logo.ico run.py --name=niuma

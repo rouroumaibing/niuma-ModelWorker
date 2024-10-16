@@ -27,25 +27,10 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.setWindowTitle('牛马-ModelWorker')
         self.setGeometry(200, 200, 400, 100)
+        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)  # 设置窗口为无边框
+
 
         main_layout = QVBoxLayout()
-
-        # 创建菜单栏
-        menu_bar = QMenuBar(self)
-        file_menu = menu_bar.addMenu('文件')
-
-        # 添加导入按钮
-        import_action = QAction('导入', self)
-        import_action.triggered.connect(lambda: config_import_export_button_clicked(self, True))
-        file_menu.addAction(import_action)
-
-        # 添加导出按钮
-        export_action = QAction('导出', self)
-        export_action.triggered.connect(lambda: config_import_export_button_clicked(self, False))
-        file_menu.addAction(export_action)
-
-        # 设置菜单栏
-        self.setMenuBar(menu_bar)
 
         top_buttons_layout = QHBoxLayout()
         
@@ -75,17 +60,43 @@ class MainWindow(QMainWindow):
         )
         self.screenshot_button.clicked.connect(self.on_screenshot_button_clicked)
 
+        # 添加导入按钮
+        self.import_button = QPushButton('导入', self)
+        self.import_button.clicked.connect(lambda: config_import_export_button_clicked(self, True))
+
+        # 添加导出按钮
+        self.export_button = QPushButton('导出', self)
+        self.export_button.clicked.connect(lambda: config_import_export_button_clicked(self, False))
+
+        # 隐藏窗口按钮
+        self.minimize_button = QPushButton('最小化')
+        self.minimize_button.clicked.connect(self.minimize_window)
+
+        # 关闭窗口按钮
+        self.close_button = QPushButton('关闭')
+        self.close_button.clicked.connect(self.close_window)
+
         # UI加载控件
         top_buttons_layout.addWidget(self.screenshot_button)
         top_buttons_layout.addWidget(self.start_button)
         top_buttons_layout.addWidget(self.all_loop_count_input)
         top_buttons_layout.addWidget(self.all_loop_count_label)
+        top_buttons_layout.addWidget(self.import_button)
+        top_buttons_layout.addWidget(self.export_button)
+        top_buttons_layout.addWidget(self.minimize_button)
+        top_buttons_layout.addWidget(self.close_button)
 
         main_layout.addLayout(top_buttons_layout)
 
-        # 创建一个中间布局来放置控件行和“+”号按钮
-        self.controls_layout = QVBoxLayout()
-        main_layout.addLayout(self.controls_layout)
+        # 创建一个带有透明背景的 QWidget 来包裹 controls_layout，放置控件行
+        self.controls_container = QWidget()
+        self.controls_container.setStyleSheet(
+            "QWidget {"
+            "    background-color: rgba(255, 255, 255, 128);"
+            "}"
+        )
+        self.controls_layout = QVBoxLayout(self.controls_container)
+        main_layout.addWidget(self.controls_container)
 
         # 添加初始的一行控件
         self.add_control_row(self.controls_layout)
@@ -104,8 +115,29 @@ class MainWindow(QMainWindow):
         # 设置键盘事件监听
         self.setMouseTracking(True)
         self.setAcceptDrops(True)
-
         self.setFocusPolicy(Qt.StrongFocus)
+
+        # 重写鼠标事件
+        self._drag_pos = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._drag_pos = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton and self._drag_pos is not None:
+            self.move(event.globalPos() - self._drag_pos)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self._drag_pos = None
+
+    def minimize_window(self):
+        self.showMinimized()
+
+    def close_window(self):
+        self.close()
 
     def add_control_row(self, layout):
         logging.info("添加控件行")
@@ -243,6 +275,9 @@ class MainWindow(QMainWindow):
         # 更新控件列表
         self.controls = [control for control in self.controls if control['layout'] is not row_layout]
 
+        # 重新调整窗口大小
+        self.adjustSize()
+
     def select_image(self):
         logging.info("选择图片")
         options = QFileDialog.Options()
@@ -296,7 +331,8 @@ class MainWindow(QMainWindow):
         else:
             control_info['wait_label'].hide()
             control_info['wait_input'].hide()
-
+        # 重新调整窗口大小
+        self.adjustSize()
     def start_cycle(self, all_loop_count=-1):
         logging.info("开始自动点击")
 
