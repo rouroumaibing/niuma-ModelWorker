@@ -2,6 +2,11 @@
 
 简介：
 
+Click on the computer screen according to the picture.
+
+根据图片点击电脑屏幕。
+
+
 Use TONGYI lingma text interaction to automatically generate the body code, the code is for learning only.
 
 使用TONGYI lingma文字交互自动生成主体代码，代码仅供学习。
@@ -23,7 +28,7 @@ python run.py
 构建成exe：
 
 ```
-pyinstaller --onefile --windowed  --add-data"./*;."  run.py  --name niuma
+pyinstaller --onefile --windowed --add-data "./*;." --icon=logo/logo.ico run.py --name=niuma
 ```
 
 功能项：
@@ -49,24 +54,22 @@ pyinstaller --onefile --windowed  --add-data"./*;."  run.py  --name niuma
 * 操作按钮：
   单击：根据图片在屏幕查找位置，然后鼠标左键点击一下
   双击：根据图片在屏幕查找位置，然后鼠标左键双击一下
-
   等待：暂停多少时间（秒）
-
   输入：输入文本，并按enter按钮
 
-4 菜单栏：
+4 其它按钮功能：
 
 * 导入按钮：yaml格式导入已编排好的动作顺序。
 * 导出按钮：yaml格式导出编排号的动作顺序。
+* 最小化：隐藏窗口
+* 关闭：退出程序
 
 当前待优化问题：
 
-1 界面没有加UI图片，更新按钮会导致UI变形——丑！
+1 界面没有加UI图片——丑！
 
-2 没有加logo按钮
+2 当前仅支持windows系统
 
-3 当前仅支持windows系统
+3 图片需要在新环境中重新截取，分辨率不同会导致获取位置失败
 
-4 图片需要在新环境中重新截取，分辨率不同会导致获取位置失败
-
-5 屏幕界面存在防截图功能，会导致图片识别获取位置失败
+4 屏幕界面存在防截图功能，会导致图片识别获取位置失败
