@@ -135,14 +135,10 @@ def cycle_input(stop_flag, loop_count, text_input):
     if loop_count == -1:
         print("开始无限循环输入文本...")
         while not stop_flag.is_set():
-            # 获取当前鼠标位置
-            current_position = pyautogui.position()
-            # 在当前位置点击鼠标
-            pyautogui.click(current_position)
             # 输入文本
             pyautogui.write(text_input)
 
-            sleep(0.3)
+            sleep(1)
             # 输入Enter
             pyautogui.press('enter')
     else:
@@ -150,14 +146,10 @@ def cycle_input(stop_flag, loop_count, text_input):
         for _ in range(loop_count):
             if stop_flag.is_set() :
                 break
-            # 获取当前鼠标位置
-            current_position = pyautogui.position()
-            # 在当前位置点击鼠标
-            pyautogui.click(current_position)
             # 输入文本
             pyautogui.write(text_input)
 
-            sleep(0.3)
+            sleep(1)
             # 输入Enter
             pyautogui.press('enter')
 
