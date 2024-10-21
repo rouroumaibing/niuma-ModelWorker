@@ -360,6 +360,7 @@ class MainWindow(QMainWindow):
                 control_layout = self.controls_layout.itemAt(index).layout()
                 control = next((item for item in self.controls if item['layout'] is control_layout), None)
                 if control:
+
                     image_path = control['image_input'].text()
                     wait_time = control['wait_input'].text()
                     text_input = control['text_input'].text()

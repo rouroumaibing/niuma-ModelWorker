@@ -1,9 +1,8 @@
-import ctypes
 import os
 import random
 import string
 import logging
-from PIL import ImageGrab
+import pyautogui
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QPen
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QMainWindow
@@ -13,7 +12,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # 获取屏幕的缩放比
 def get_screen_scaling():
-    return ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+    try:
+        import ctypes
+        return ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+    except (ImportError, AttributeError):
+        return 1.0
 
 class ScreenshotWidget(QWidget):
     def __init__(self):
@@ -52,13 +55,13 @@ class ScreenshotWidget(QWidget):
                 self.screenshot_complete()
                 return
             
-            im = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+            screenshot = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
             logging.info("截图完成")
 
             random_filename = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)) + ".jpg"
             if not os.path.exists("images"):
                 os.makedirs("images")
-            im.save(os.path.join("images", random_filename))
+            screenshot.save(os.path.join("images", random_filename))
             logging.info(f"截图保存到 {os.path.join('images', random_filename)}")
 
             # 调用截图完成后的回调函数

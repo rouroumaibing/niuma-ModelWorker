@@ -44,19 +44,21 @@ def on_press(key, stop_flag):
 
 def find_and_click(image_path, click_type):
     try:
-        location = pyautogui.locateOnScreen(image_path, confidence=0.7)
+
+        location = pyautogui.locateOnScreen(image_path, confidence=0.9)
         if location is not None:
             left, top, width, height = location
             x = random.randint(left, left + width)
             y = random.randint(top, top + height)
 
-            # 获取当前鼠标位置
-            current_x, current_y = pyautogui.position()
+            # 打印找到的图片位置
+            print(f"找到图片 {image_path} 位置: ({left}, {top}, {width}, {height})")
+            print(f"随机点击位置: ({x}, {y})")
 
             # 移动鼠标到目标位置
             pyautogui.moveTo(x, y, duration=1.0, tween=pyautogui.easeInOutQuad)
 
-            print(f"找到图片 {image_path} 并点击位置: ({x}, {y})")
+            print(f"点击位置: ({x}, {y})")
             if click_type == 'double_click':
                 pyautogui.doubleClick(x, y)
             elif click_type == 'click':
@@ -86,7 +88,6 @@ def cycle_click(stop_flag, action, loop_count, image_path):
         logging.info(f"loop_count: {loop_count}")
         for _ in range(loop_count):
             find_and_click(image_path, click_type)
-            logging.info(f"循环")
 
     # 停止监听键盘事件
     listener.stop()
