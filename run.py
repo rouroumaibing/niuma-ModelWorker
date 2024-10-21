@@ -1,12 +1,13 @@
 import os
 import sys
-from pynput import keyboard
-import pyautogui
 import logging
 import ctypes
 import string
 import yaml
+import threading
 
+from pynput import keyboard
+import pyautogui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QFileDialog, QComboBox, QSizePolicy, QMenuBar, QAction
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QPainter, QPen, QCursor
@@ -336,6 +337,7 @@ class MainWindow(QMainWindow):
             control_info['wait_input'].hide()
         # 重新调整窗口大小
         self.adjustSize()
+
     #  获取用户输入
     def get_user_inputs(self):
         to_do_list = []
@@ -356,11 +358,12 @@ class MainWindow(QMainWindow):
                     'option': option
                 })
         return to_do_list
+
     def start_cycle(self, all_loop_count=-1):
         logging.info("开始自动点击")
 
         # 初始化停止标志
-        stop_flag = [False]
+        stop_flag = threading.Event()
         # 开始监听键盘事件
         listener_main = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
         listener_main.start()
@@ -372,16 +375,17 @@ class MainWindow(QMainWindow):
         # 创建线程池，大小为1
         with ThreadPoolExecutor(max_workers=1) as self.executor:
             if all_loop_count == -1:
-                def run_infinite():
-                    while not stop_flag[0]:
-                        self.cycle_body(stop_flag, to_do_list)
-                self.executor.submit(run_infinite)
+                while not stop_flag.is_set():
+                    self.executor.submit(self.cycle_body(stop_flag, to_do_list))
             else:
                 for _ in range(all_loop_count):
+                    if stop_flag.is_set() :
+                        break
                     self.executor.submit(self.cycle_body(stop_flag, to_do_list))
 
         # 停止监听键盘事件
         listener_main.stop()
+
 
     def cycle_body(self, stop_flag, to_do_list):
         try:
@@ -394,18 +398,19 @@ class MainWindow(QMainWindow):
                 loop_count = task['loop_count']
                 option = task['option']
 
+                if option == '单击' or option == '双击':
+                    if not os.path.exists(image_path):
+                        print("错误：图片路径不存在，请输入正确的图片路径。")
+                        stop_flag.set()
+
+                if stop_flag.is_set() :
+                    print("message: 任务已取消")
+                    break
+
                 # 调用功能函数
                 if option == '单击':
-                    if not os.path.exists(image_path):
-                        print("错误：图片路径不存在，请输入正确的图片路径。")
-                        stop_flag[0] = True
-                        return
                     autoCycle(stop_flag, loop_count=loop_count, action='click', other=image_path)
                 elif option == '双击':
-                    if not os.path.exists(image_path):
-                        print("错误：图片路径不存在，请输入正确的图片路径。")
-                        stop_flag[0] = True
-                        return
                     autoCycle(stop_flag, loop_count=loop_count, action='double_click', other=image_path)
                 elif option == '等待':
                     autoCycle(stop_flag, loop_count=loop_count, action='wait', other=wait_time)

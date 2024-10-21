@@ -4,6 +4,7 @@ from pynput import keyboard
 import pyautogui
 from time import sleep
 import logging
+import threading
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -39,12 +40,11 @@ def autoCycle(stop_flag, **kwargs):
 
 def on_press(key, stop_flag):
     if key == keyboard.Key.f11:
-        stop_flag[0] = True
+        stop_flag.set()
         print("循环停止。")
 
 def find_and_click(image_path, click_type):
     try:
-
         location = pyautogui.locateOnScreen(image_path, confidence=0.9)
         if location is not None:
             left, top, width, height = location
@@ -81,7 +81,7 @@ def cycle_click(stop_flag, action, loop_count, image_path):
 
     if loop_count == -1:
         print("开始无限循环查找并点击图片...")
-        while not stop_flag[0]:
+        while not stop_flag.is_set():
             import pygetwindow as gw
             current_window = gw.getActiveWindow()
             if current_window:
@@ -94,6 +94,8 @@ def cycle_click(stop_flag, action, loop_count, image_path):
         print(f"开始循环 {loop_count} 次查找并点击图片...")
         logging.info(f"loop_count: {loop_count}")
         for _ in range(loop_count):
+            if stop_flag.is_set() :
+                break
             import pygetwindow as gw
             current_window = gw.getActiveWindow()
             if current_window:
@@ -113,11 +115,13 @@ def cycle_wait(stop_flag, loop_count, wait_time):
 
     if loop_count == -1:
         print("开始无限循环等待...")
-        while not stop_flag[0]:
+        while not stop_flag.is_set():
             sleep(int(wait_time))
     else:
         print(f"开始循环 {loop_count} 次等待 {wait_time} 秒...")
         for _ in range(loop_count):
+            if stop_flag.is_set() :
+                break
             sleep(int(wait_time))
 
     # 停止监听键盘事件
@@ -130,7 +134,7 @@ def cycle_input(stop_flag, loop_count, text_input):
 
     if loop_count == -1:
         print("开始无限循环输入文本...")
-        while not stop_flag[0]:
+        while not stop_flag.is_set():
             # 获取当前鼠标位置
             current_position = pyautogui.position()
             # 在当前位置点击鼠标
@@ -144,6 +148,8 @@ def cycle_input(stop_flag, loop_count, text_input):
     else:
         print(f"开始循环 {loop_count} 次输入文本...")
         for _ in range(loop_count):
+            if stop_flag.is_set() :
+                break
             # 获取当前鼠标位置
             current_position = pyautogui.position()
             # 在当前位置点击鼠标
@@ -160,13 +166,15 @@ def cycle_input(stop_flag, loop_count, text_input):
 
 def main():
     # 示例图片路径
-    image_path = "images/TGX0NN1C.jpg"
+    image_path = "images/search.jpg"
     
     # 示例循环次数
     loop_count = 5
     
+    # 创建停止标志
+    stop_flag = threading.Event()
+    
     # 调用 autoCycle 函数
-    stop_flag = [False]
     autoCycle(stop_flag, loop_count=loop_count, action='click', other=image_path)
 
 if __name__ == "__main__":
