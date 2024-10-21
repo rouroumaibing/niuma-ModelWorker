@@ -76,26 +76,40 @@ def cycle_click(stop_flag, action, loop_count, image_path):
     click_type = action
 
     # 开始监听键盘事件
-    listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
-    listener.start()
+    cycle_click_listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
+    cycle_click_listener.start()
 
     if loop_count == -1:
         print("开始无限循环查找并点击图片...")
         while not stop_flag[0]:
+            import pygetwindow as gw
+            current_window = gw.getActiveWindow()
+            if current_window:
+                print(f"当前窗口标题: {current_window.title}")
+            else:
+                print("无法获取当前窗口标题")
+
             find_and_click(image_path, click_type)
     else:
         print(f"开始循环 {loop_count} 次查找并点击图片...")
         logging.info(f"loop_count: {loop_count}")
         for _ in range(loop_count):
+            import pygetwindow as gw
+            current_window = gw.getActiveWindow()
+            if current_window:
+                print(f"当前窗口标题: {current_window.title}")
+            else:
+                print("无法获取当前窗口标题")
+                
             find_and_click(image_path, click_type)
 
     # 停止监听键盘事件
-    listener.stop()
+    cycle_click_listener.stop()
 
 def cycle_wait(stop_flag, loop_count, wait_time):
     # 开始监听键盘事件
-    listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
-    listener.start()
+    cycle_wait_listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
+    cycle_wait_listener.start()
 
     if loop_count == -1:
         print("开始无限循环等待...")
@@ -107,12 +121,12 @@ def cycle_wait(stop_flag, loop_count, wait_time):
             sleep(int(wait_time))
 
     # 停止监听键盘事件
-    listener.stop()
+    cycle_wait_listener.stop()
 
 def cycle_input(stop_flag, loop_count, text_input):
     # 开始监听键盘事件
-    listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
-    listener.start()
+    cycle_input_listener = keyboard.Listener(on_press=lambda key: on_press(key, stop_flag))
+    cycle_input_listener.start()
 
     if loop_count == -1:
         print("开始无限循环输入文本...")
@@ -142,7 +156,7 @@ def cycle_input(stop_flag, loop_count, text_input):
             pyautogui.press('enter')
 
     # 停止监听键盘事件
-    listener.stop()
+    cycle_input_listener.stop()
 
 def main():
     # 示例图片路径

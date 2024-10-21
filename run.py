@@ -3,13 +3,16 @@ import sys
 from pynput import keyboard
 import pyautogui
 import logging
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QFileDialog, QComboBox, QSizePolicy, QMenuBar, QAction
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPen, QCursor
-from PIL import ImageGrab
 import ctypes
 import string
 import yaml
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QFileDialog, QComboBox, QSizePolicy, QMenuBar, QAction
+from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtGui import QPainter, QPen, QCursor
+from PIL import ImageGrab
+from concurrent.futures import ThreadPoolExecutor
+
 from pkg.autoCycle  import autoCycle, on_press
 from pkg.imageScreen import ScreenshotWidget
 from pkg.config import config_import_export_button_clicked
@@ -30,9 +33,9 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)  # 设置窗口为无边框
 
 
-        main_layout = QVBoxLayout()
+        self.main_layout = QVBoxLayout()
 
-        top_buttons_layout = QHBoxLayout()
+        self.top_buttons_layout = QHBoxLayout()
         
         # 全局循环次数输入框
         self.all_loop_count_input = QLineEdit('1')
@@ -77,16 +80,16 @@ class MainWindow(QMainWindow):
         self.close_button.clicked.connect(self.close_window)
 
         # UI加载控件
-        top_buttons_layout.addWidget(self.screenshot_button)
-        top_buttons_layout.addWidget(self.start_button)
-        top_buttons_layout.addWidget(self.all_loop_count_input)
-        top_buttons_layout.addWidget(self.all_loop_count_label)
-        top_buttons_layout.addWidget(self.import_button)
-        top_buttons_layout.addWidget(self.export_button)
-        top_buttons_layout.addWidget(self.minimize_button)
-        top_buttons_layout.addWidget(self.close_button)
+        self.top_buttons_layout.addWidget(self.screenshot_button)
+        self.top_buttons_layout.addWidget(self.start_button)
+        self.top_buttons_layout.addWidget(self.all_loop_count_input)
+        self.top_buttons_layout.addWidget(self.all_loop_count_label)
+        self.top_buttons_layout.addWidget(self.import_button)
+        self.top_buttons_layout.addWidget(self.export_button)
+        self.top_buttons_layout.addWidget(self.minimize_button)
+        self.top_buttons_layout.addWidget(self.close_button)
 
-        main_layout.addLayout(top_buttons_layout)
+        self.main_layout.addLayout(self.top_buttons_layout)
 
         # 创建一个带有透明背景的 QWidget 来包裹 controls_layout，放置控件行
         self.controls_container = QWidget()
@@ -96,7 +99,7 @@ class MainWindow(QMainWindow):
             "}"
         )
         self.controls_layout = QVBoxLayout(self.controls_container)
-        main_layout.addWidget(self.controls_container)
+        self.main_layout.addWidget(self.controls_container)
 
         # 添加初始的一行控件
         self.add_control_row(self.controls_layout)
@@ -108,9 +111,9 @@ class MainWindow(QMainWindow):
         self.controls_layout.addWidget(self.add_button)
 
         # 创建中心widget
-        central_widget = QWidget()
-        central_widget.setLayout(main_layout)
-        self.setCentralWidget(central_widget)
+        self.central_widget = QWidget()
+        self.central_widget.setLayout(self.main_layout)
+        self.setCentralWidget(self.central_widget)
 
         # 设置键盘事件监听
         self.setMouseTracking(True)
@@ -333,6 +336,26 @@ class MainWindow(QMainWindow):
             control_info['wait_input'].hide()
         # 重新调整窗口大小
         self.adjustSize()
+    #  获取用户输入
+    def get_user_inputs(self):
+        to_do_list = []
+        for index in range(self.controls_layout.count()):
+            control_layout = self.controls_layout.itemAt(index).layout()
+            control = next((item for item in self.controls if item['layout'] is control_layout), None)
+            if control:
+                image_path = control['image_input'].text()
+                wait_time = control['wait_input'].text()
+                text_input = control['text_input'].text()
+                loop_count = int(control['loop_input'].text())
+                option = control['option_combo'].currentText()
+                to_do_list.append({
+                    'image_path': image_path,
+                    'wait_time': wait_time,
+                    'text_input': text_input,
+                    'loop_count': loop_count,
+                    'option': option
+                })
+        return to_do_list
     def start_cycle(self, all_loop_count=-1):
         logging.info("开始自动点击")
 
@@ -343,49 +366,55 @@ class MainWindow(QMainWindow):
         listener_main.start()
         logging.info(f"all_loop_count: {all_loop_count}")
 
-        if all_loop_count == -1:
-            while not stop_flag[0]:
-                self.cycle_body(stop_flag)
-        else:
-            for _ in range(all_loop_count):
-                self.cycle_body(stop_flag)
+        # 获取所有行的用户输入值
+        to_do_list = self.get_user_inputs()
+
+        # 创建线程池，大小为1
+        with ThreadPoolExecutor(max_workers=1) as self.executor:
+            if all_loop_count == -1:
+                def run_infinite():
+                    while not stop_flag[0]:
+                        self.cycle_body(stop_flag, to_do_list)
+                self.executor.submit(run_infinite)
+            else:
+                for _ in range(all_loop_count):
+                    self.executor.submit(self.cycle_body(stop_flag, to_do_list))
 
         # 停止监听键盘事件
         listener_main.stop()
 
-    def cycle_body(self, stop_flag):
+    def cycle_body(self, stop_flag, to_do_list):
         try:
-            # 获取所有行的用户输入的值
-            for index in range(self.controls_layout.count()):
-                control_layout = self.controls_layout.itemAt(index).layout()
-                control = next((item for item in self.controls if item['layout'] is control_layout), None)
-                if control:
 
-                    image_path = control['image_input'].text()
-                    wait_time = control['wait_input'].text()
-                    text_input = control['text_input'].text()
-                    loop_count = int(control['loop_input'].text())
-                    option = control['option_combo'].currentText()
+            # 处理每个任务
+            for task in to_do_list:
+                image_path = task['image_path']
+                wait_time = task['wait_time']
+                text_input = task['text_input']
+                loop_count = task['loop_count']
+                option = task['option']
 
-                    # 调用功能函数
-                    if option == '单击':
-                        if not os.path.exists(image_path):
-                            print("错误：图片路径不存在，请输入正确的图片路径。")
-                            stop_flag[0] = True
-                            return
-                        autoCycle(stop_flag, loop_count=loop_count, action='click', other=image_path)
-                    elif option == '双击':
-                        if not os.path.exists(image_path):
-                            print("错误：图片路径不存在，请输入正确的图片路径。")
-                            stop_flag[0] = True
-                            return
-                        autoCycle(stop_flag, loop_count=loop_count, action='double_click', other=image_path)
-                    elif option == '等待':
-                        autoCycle(stop_flag, loop_count=loop_count, action='wait', other=wait_time)
-                    elif option == '输入':
-                        autoCycle(stop_flag, loop_count=loop_count, action='input', other=text_input)
-                    else:
-                        logging.warning("无效的操作选项")
+                # 调用功能函数
+                if option == '单击':
+                    if not os.path.exists(image_path):
+                        print("错误：图片路径不存在，请输入正确的图片路径。")
+                        stop_flag[0] = True
+                        return
+                    autoCycle(stop_flag, loop_count=loop_count, action='click', other=image_path)
+                elif option == '双击':
+                    if not os.path.exists(image_path):
+                        print("错误：图片路径不存在，请输入正确的图片路径。")
+                        stop_flag[0] = True
+                        return
+                    autoCycle(stop_flag, loop_count=loop_count, action='double_click', other=image_path)
+                elif option == '等待':
+                    autoCycle(stop_flag, loop_count=loop_count, action='wait', other=wait_time)
+                elif option == '输入':
+                    autoCycle(stop_flag, loop_count=loop_count, action='input', other=text_input)
+                else:
+                    logging.warning("无效的操作选项")
+                
+                QCoreApplication.processEvents()
         except ValueError as e:
             logging.error(f"输入错误: {e}")
         except Exception as e:
